@@ -1,30 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
 import { LanguageProvider } from '@/contexts/LanguageContext';
-
-// Use system fonts for better performance
-const systemFont = localFont({
-  src: [
-    {
-      path: '../public/fonts/system.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-  ],
-  fallback: [
-    '-apple-system',
-    'BlinkMacSystemFont',
-    'Segoe UI',
-    'Roboto',
-    'Oxygen',
-    'Ubuntu',
-    'Cantarell',
-    'sans-serif'
-  ],
-  display: 'swap',
-  variable: '--font-system'
-});
 
 export const metadata: Metadata = {
   title: {
@@ -72,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${systemFont.variable} font-system`}>
+      <body className="font-sans">
         <LanguageProvider>
           {children}
         </LanguageProvider>
