@@ -1,30 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 
-// Use system fonts for better performance
-const systemFont = localFont({
-  src: [
-    {
-      path: '../public/fonts/system.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-  ],
-  fallback: [
-    '-apple-system',
-    'BlinkMacSystemFont',
-    'Segoe UI',
-    'Roboto',
-    'Oxygen',
-    'Ubuntu',
-    'Cantarell',
-    'sans-serif'
-  ],
-  display: 'swap',
+// Use system fonts for better performance - removing custom font for now
+const systemFont = {
   variable: '--font-system'
-});
+};
 
 export const metadata: Metadata = {
   title: {
@@ -71,10 +54,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${systemFont.variable} font-system`}>
+    <html lang="tr" suppressHydrationWarning>
+      <body className={`${systemFont.variable} font-system`} suppressHydrationWarning>
         <LanguageProvider>
           {children}
+          <Toaster />
+          <SonnerToaster richColors position="top-right" />
         </LanguageProvider>
       </body>
     </html>

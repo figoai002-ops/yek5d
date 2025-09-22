@@ -1,21 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
+import { Search, Grid, List, Filter } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { FaTruck } from 'react-icons/fa';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import Link from 'next/link';
-import { products, Product } from '@/products/data';
-import { productSlug } from '@/lib/slug';
+import { products } from '@/data/products';
+import type { Product } from '@/types/ecom';
 import { useLanguage } from '@/contexts/LanguageContext';
-
-// Lazy load icons
-const Search = dynamic(() => import('lucide-react').then(mod => ({ default: mod.Search })), { ssr: false });
-const Grid = dynamic(() => import('lucide-react').then(mod => ({ default: mod.Grid })), { ssr: false });
-const List = dynamic(() => import('lucide-react').then(mod => ({ default: mod.List })), { ssr: false });
-const Filter = dynamic(() => import('lucide-react').then(mod => ({ default: mod.Filter })), { ssr: false });
+import { tl } from '@/lib/format';
 
 export default function ProductsPage() {
   const { t } = useLanguage();
@@ -24,13 +20,24 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get unique categories from products
-  const categories = ['Tümü', 'Hızlı Teslimat', ...Array.from(new Set(products.map(p => p.category).filter(c => c !== 'Hızlı Teslimat')))];
+  const categories = [
+    'Tümü', 
+    'Satın Alınabilir',
+    'Hızlı Teslimat',
+    ...Array.from(new Set(products.map(p => p.category).filter(c => c && c !== 'Hızlı Teslimat')))
+  ];
   
   const getCategoryCount = (category: string) => {
     if (category === 'Tümü') return products.length;
-    if (category === 'Hızlı Teslimat') return products.filter(p => p.fastDelivery && (p.stock || 0) > 0).length;
+    if (category === 'Satın Alınabilir') return products.filter(p => p.purchasable).length;
+    if (category === 'Hızlı Teslimat') return products.filter(p => p.isQuickDelivery && (p.stock || 0) > 0).length;
     return products.filter(p => p.category === category).length;
   };
 
@@ -38,33 +45,40 @@ export default function ProductsPage() {
   const processedProducts = products
     .filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          product.category.toLowerCase().includes(searchTerm.toLowerCase());
+                          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          product.category?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'Tümü' || 
                              product.category === selectedCategory ||
-                             (selectedCategory === 'Hızlı Teslimat' && product.fastDelivery && (product.stock || 0) > 0);
+                             (selectedCategory === 'Satın Alınabilir' && product.purchasable) ||
+                             (selectedCategory === 'Hızlı Teslimat' && product.isQuickDelivery && (product.stock || 0) > 0);
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       // YEK-306 Kalorimetre öncelik (model adına göre)
-      if (a.model === 'YEKLAB YEK-306') return -1;
-      if (b.model === 'YEKLAB YEK-306') return 1;
+      // Priority sorting removed for simplification
       
       // Sonra hızlı teslimat öncelik
-      const aFast = a.fastDelivery ? 1 : 0;
-      const bFast = b.fastDelivery ? 1 : 0;
+      const aFast = a.isQuickDelivery ? 1 : 0;
+      const bFast = b.isQuickDelivery ? 1 : 0;
       if (aFast !== bFast) return bFast - aFast;
       
       // Sonra featured öncelik
-      const aFeatured = a.label === 'featured' ? 1 : 0;
-      const bFeatured = b.label === 'featured' ? 1 : 0;
+      const aFeatured = 0; // Simplified
+      const bFeatured = 0; // Simplified
       if (aFeatured !== bFeatured) return bFeatured - aFeatured;
 
       // Normal sıralama
       switch (sortBy) {
         case 'name': return a.name.localeCompare(b.name);
-        case 'price': return a.price.localeCompare(b.price);
-        case 'category': return a.category.localeCompare(b.category);
+        case 'price': {
+          // Fiyat stringlerinden ilk sayıyı çıkarıp karşılaştır
+          const aPrice = typeof a.price === 'string' ? 
+            parseFloat(a.price.replace(/[^\d,]/g, '').replace(',', '')) : a.price;
+          const bPrice = typeof b.price === 'string' ? 
+            parseFloat(b.price.replace(/[^\d,]/g, '').replace(',', '')) : b.price;
+          return aPrice - bPrice;
+        }
+        case 'category': return (a.category || '').localeCompare(b.category || '');
         default: return 0;
       }
     });
@@ -121,6 +135,20 @@ export default function ProductsPage() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  if (!mounted) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-gray-50 pt-16">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-gray-600">Ürünler yükleniyor...</div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -201,11 +229,11 @@ export default function ProductsPage() {
               {categories.map((category) => (
                 <button
                   key={category}
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => setSelectedCategory(category || '')}
                   className={`category-pill ${selectedCategory === category ? 'active' : ''}`}
                 >
                   {category}
-                  <span className="category-count">({getCategoryCount(category)})</span>
+                  <span className="category-count">({getCategoryCount(category || '')})</span>
                 </button>
               ))}
             </div>
@@ -222,7 +250,7 @@ export default function ProductsPage() {
               <span className="text-2xl">⚡</span>
               <div>
                 <h3 className="font-semibold text-green-800">Hızlı Teslimat Ürünleri</h3>
-                <p className="text-sm text-green-600">Stokta mevcut, aynı gün kargo</p>
+                <p className="text-sm text-green-600">Stokta mevcut, 3 gün içinde kargo</p>
               </div>
             </div>
             <Link 
@@ -257,20 +285,28 @@ export default function ProductsPage() {
                       loading="lazy"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
-                    {product.fastDelivery && (
-                      <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                        ⚡ Hızlı
-                      </span>
-                    )}
-                    {product.label !== 'none' && (
-                      <span className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${
-                        product.label === 'featured' ? 'bg-orange-500 text-white' :
-                        product.label === 'new' ? 'bg-blue-500 text-white' :
-                        product.label === 'popular' ? 'bg-green-500 text-white' : ''
-                      }`}>
-                        {product.label === 'featured' ? 'Öne Çıkan' :
-                         product.label === 'new' ? 'Yeni' :
-                         product.label === 'popular' ? 'Popüler' : ''}
+                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      {product.isQuickDelivery && (
+                        <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                          ⚡ Hızlı
+                        </span>
+                      )}
+                      {product.label && product.label !== 'none' && (
+                        <span className={`text-white text-xs px-2 py-1 rounded-full font-bold ${
+                          product.label === 'featured' ? 'bg-yellow-500' :
+                          product.label === 'new' ? 'bg-green-600' :
+                          product.label === 'popular' ? 'bg-red-500' :
+                          'bg-gray-500'
+                        }`}>
+                          {product.label === 'featured' ? 'ÖNE ÇIKAN' :
+                           product.label === 'new' ? 'YENİ' :
+                           product.label === 'popular' ? 'POPÜLER' : ''}
+                        </span>
+                      )}
+                    </div>
+                    {product.purchasable && (
+                      <span className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500 text-white">
+                        Satın Alınabilir
                       </span>
                     )}
                   </div>
@@ -280,31 +316,47 @@ export default function ProductsPage() {
                         {product.category}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem]">
-                      {product.model} {product.name}
+                    <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[3rem]">
+                      {product.name}
                     </h3>
+                    {product.specs?.Model && (
+                      <p className="text-sm text-blue-600 font-medium mb-2">
+                        Model: {product.specs.Model}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow min-h-[2.5rem]">
-                      {product.description}
+                      {product.shortDesc}
                     </p>
                     <div className="text-lg font-bold text-blue-600 mb-3">
-                      {product.price}
+                      {typeof product.price === 'number' ? tl(product.price) : product.price}
                     </div>
                     <div className="flex gap-2 mt-auto">
                       <Link
-                        href={`/urun/${productSlug(product)}`}
+                        href={`/urun/${product.slug}`}
                         className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 text-center transition-colors"
                       >
                         Detaylar
                       </Link>
-                      <a
-                        href={`https://wa.me/905308906613?text=${encodeURIComponent(`Merhaba, ${product.model} ${product.name} hakkında bilgi almak istiyorum.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-whatsapp flex-shrink-0"
-                      >
-                        <FaWhatsapp className="w-5 h-5" />
-                        İletişim
-                      </a>
+                      
+                      {product.purchasable ? (
+                        // Satın alınabilir ürünler için sepete ekle butonu
+                        <div className="flex-shrink-0">
+                          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                            Sepete Ekle
+                          </button>
+                        </div>
+                      ) : (
+                        // Satın alınamayan ürünler için WhatsApp
+                        <a
+                          href={`https://wa.me/905308906613?text=${encodeURIComponent(`Merhaba, ${product.name} hakkında bilgi almak istiyorum.`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 bg-green-600 hover:bg-green-700 hover:scale-105 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-in-out hover:shadow-lg transform flex items-center gap-2"
+                        >
+                          <FaWhatsapp className="w-4 h-4" />
+                          İletişim
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -332,46 +384,69 @@ export default function ProductsPage() {
                             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                               {product.category}
                             </span>
-                            {product.label !== 'none' && (
-                              <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                                product.label === 'featured' ? 'bg-orange-500 text-white' :
-                                product.label === 'new' ? 'bg-blue-500 text-white' :
-                                product.label === 'popular' ? 'bg-green-500 text-white' : ''
+                            {product.purchasable && (
+                              <span className="ml-2 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500 text-white">
+                                Satın Alınabilir
+                              </span>
+                            )}
+                            {product.isQuickDelivery && (
+                              <span className="ml-2 px-2 py-1 rounded-full text-xs font-medium bg-blue-500 text-white">
+                                Hızlı Teslimat
+                              </span>
+                            )}
+                            {product.label && product.label !== 'none' && (
+                              <span className={`ml-2 text-white text-xs px-2 py-1 rounded-full font-bold ${
+                                product.label === 'featured' ? 'bg-yellow-500' :
+                                product.label === 'new' ? 'bg-green-600' :
+                                product.label === 'popular' ? 'bg-red-500' :
+                                'bg-gray-500'
                               }`}>
-                                {product.label === 'featured' ? 'Öne Çıkan' :
-                                 product.label === 'new' ? 'Yeni' :
-                                 product.label === 'popular' ? 'Popüler' : ''}
+                                {product.label === 'featured' ? 'ÖNE ÇIKAN' :
+                                 product.label === 'new' ? 'YENİ' :
+                                 product.label === 'popular' ? 'POPÜLER' : ''}
                               </span>
                             )}
                           </div>
-                          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            {product.model} {product.name}
+                          <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                            {product.name}
                           </h3>
+                          {product.specs?.Model && (
+                            <p className="text-sm text-blue-600 font-medium mb-2">
+                              Model: {product.specs.Model}
+                            </p>
+                          )}
                           <p className="text-gray-600 mb-3">
-                            {product.description}
+                            {product.shortDesc}
                           </p>
                           <div className="text-2xl font-bold text-blue-600">
-                            {product.price}
+                            {typeof product.price === 'number' ? tl(product.price) : product.price}
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 md:w-48">
                           <Link
-                            href={`/urun/${productSlug(product)}`}
+                            href={`/urun/${product.slug}`}
                             className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 text-center transition-colors"
                           >
                             Detayları Görüntüle
                           </Link>
-                          <a
-                            href={`https://wa.me/905308906613?text=${encodeURIComponent(`Merhaba, ${product.model} ${product.name} hakkında bilgi almak istiyorum.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-whatsapp"
-                          >
-                            <FaWhatsapp className="w-5 h-5" />
-                            İletişim
-                          </a>
+                          
+                          {product.purchasable ? (
+                            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+                              Sepete Ekle
+                            </button>
+                          ) : (
+                            <a
+                              href={`https://wa.me/905308906613?text=${encodeURIComponent(`Merhaba, ${product.name} hakkında bilgi almak istiyorum.`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-green-600 hover:bg-green-700 hover:scale-105 active:scale-95 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ease-in-out hover:shadow-lg transform flex items-center justify-center gap-2"
+                            >
+                              <FaWhatsapp className="w-4 h-4" />
+                              İletişim
+                            </a>
+                          )}
                         </div>
-                        {product.fastDelivery && (
+                        {product.isQuickDelivery && (
                           <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
                             ⚡ Hızlı
                           </span>
@@ -400,6 +475,7 @@ export default function ProductsPage() {
         
         </div>
       </div>
+      <Footer />
     </>
   );
 }

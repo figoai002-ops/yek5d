@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin/
+
+# Allow all product pages
+Allow: /urun/
+Allow: /products/
+Allow: /hizli-teslimat/
+
+# Sitemap
+Sitemap: https://yeklab.com/sitemap.xml

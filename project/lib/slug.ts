@@ -16,3 +16,6 @@ export function slugify(input: string) {
 export function productSlug(p: { model: string; name: string }) {
   return slugify(`${p.model} ${p.name}`);
 }
+
+// Alias for convenience
+export const generateSlug = slugify;

@@ -13,6 +13,7 @@ export interface Product {
   specifications: { [key: string]: string };
   price: string;
   image: string;
+  images?: string[]; // Multi-image support için ek görseller
   certificates: string[];
   label: 'featured' | 'new' | 'popular' | 'none';
   featured?: boolean;
@@ -1049,7 +1050,7 @@ export const products: Product[] = [
       'Paket İçeriği': '100 adet',
       'Sterilizasyon': 'Steril-Değil'
     },
-    price: '₺150 - ₺200',
+    price: '₺155',
     image: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400&format=webp',
     certificates: ['CE'],
     label: 'featured',
@@ -1070,7 +1071,7 @@ export const products: Product[] = [
       'Kapasite': '100g',
       'Ekran': 'LCD dokunmatik'
     },
-    price: '₺55,000',
+    price: '₺55.000',
     image: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400&format=webp',
     certificates: ['CE', 'ISO9001'],
     label: 'featured',
@@ -1091,7 +1092,7 @@ export const products: Product[] = [
       'Kontrol': 'Dijital PID',
       'Rampa': 'Ayarlanabilir ısıtma'
     },
-    price: '₺65,000',
+    price: '₺65.000',
     image: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400&format=webp', 
     certificates: ['CE', 'ISO9001'],
     label: 'popular',
@@ -1115,7 +1116,12 @@ export const products: Product[] = [
       'Standart': 'ASTM D240, ISO 1928'
     },
     price: '$15,000',
-    image: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400&format=webp',
+    image: 'https://ik.imagekit.io/qvtafpu3u/oksijenli-kalorimetre-yeklab-yek306-laboratuvar-cihazi.jpg.avif',
+    images: [
+      'https://ik.imagekit.io/qvtafpu3u/oksijenli-kalorimetre-yeklab-yek306-laboratuvar-cihazi-2.jpg',
+      'https://ik.imagekit.io/qvtafpu3u/oksijenli-kalorimetre-yeklab-yek306-laboratuvar-cihazi-3.jpg',
+      'https://ik.imagekit.io/qvtafpu3u/oksijenli-kalorimetre-yeklab-yek306-laboratuvar-cihazi-4.jpg'
+    ],
     certificates: ['CE', 'ISO9001', 'ASTM'],
     label: 'featured',
     featured: true

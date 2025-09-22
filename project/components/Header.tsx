@@ -2,11 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-
-// Lazy load icons to reduce initial bundle size
-const Menu = dynamic(() => import('lucide-react').then(mod => ({ default: mod.Menu })), { ssr: false });
-const X = dynamic(() => import('lucide-react').then(mod => ({ default: mod.X })), { ssr: false });
+import { Menu, X } from 'lucide-react';
+import { MiniCart } from './MiniCart';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +22,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-50 h-16">
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           
@@ -43,9 +40,10 @@ export default function Header() {
                   key={item.name}
                   href={item.href}
                   aria-label={item['aria-label']}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-sm font-semibold text-orange-700 hover:bg-orange-50 active:scale-[0.99] transition"
+                  className="flex items-center gap-1 text-orange-600 hover:text-orange-700 px-3 py-2 rounded-lg transition-all duration-200 font-medium"
+                  style={{ textDecoration: 'none !important' }}
                 >
-                  <span className="leading-none">⚡</span>
+                  <span className="text-base">⚡</span>
                   <span>{item.name}</span>
                 </Link>
               ) : (
@@ -53,6 +51,7 @@ export default function Header() {
                   key={item.name}
                   href={item.href}
                   className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-all duration-200 font-medium"
+                  style={{ textDecoration: 'none !important' }}
                 >
                   {item.name}
                 </Link>
@@ -60,7 +59,7 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Language Switcher & Mobile Menu Button */}
+          {/* Language Switcher, MiniCart & Mobile Menu Button */}
           <div className="flex items-center space-x-3">
             {/* Language Switcher */}
             <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
@@ -71,6 +70,9 @@ export default function Header() {
                 EN
               </button>
             </div>
+
+            {/* Mini Cart */}
+            <MiniCart />
 
             {/* Mobile menu button */}
             <button 
@@ -117,20 +119,19 @@ export default function Header() {
 
             {/* Linkler */}
             <nav className="p-4 space-y-2">
-              <Link href="/" className="block py-2" onClick={() => setIsOpen(false)}>Ana Sayfa</Link>
+              <Link href="/" className="block py-2 no-underline" style={{ textDecoration: 'none' }} onClick={() => setIsOpen(false)}>Ana Sayfa</Link>
               <Link
                 href="/hizli-teslimat"
                 aria-label="Hızlı teslimat ürünleri"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300
-                           bg-white px-3 py-2 text-sm font-semibold text-orange-700
-                           hover:bg-orange-50 w-full justify-center transition"
+                className="flex items-center gap-1 text-orange-600 hover:text-orange-700 py-2 font-medium no-underline"
+                style={{ textDecoration: 'none' }}
                 onClick={() => setIsOpen(false)}
               >
                 ⚡ <span>Hızlı Teslimat</span>
               </Link>
-              <Link href="/products" className="block py-2" onClick={() => setIsOpen(false)}>Ürünler</Link>
-              <Link href="/about" className="block py-2" onClick={() => setIsOpen(false)}>Hakkımızda</Link>
-              <Link href="/contact" className="block py-2" onClick={() => setIsOpen(false)}>İletişim</Link>
+              <Link href="/products" className="block py-2 no-underline" style={{ textDecoration: 'none' }} onClick={() => setIsOpen(false)}>Ürünler</Link>
+              <Link href="/about" className="block py-2 no-underline" style={{ textDecoration: 'none' }} onClick={() => setIsOpen(false)}>Hakkımızda</Link>
+              <Link href="/contact" className="block py-2 no-underline" style={{ textDecoration: 'none' }} onClick={() => setIsOpen(false)}>İletişim</Link>
             </nav>
           </aside>
         </div>

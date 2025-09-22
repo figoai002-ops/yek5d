@@ -32,7 +32,7 @@ export default function Hero() {
     <>
       <section
         id="home"
-        className="relative overflow-hidden py-24 bg-gradient-to-b from-gray-50 to-white"
+        className="relative overflow-hidden pt-24 pb-16 bg-gradient-to-b from-gray-50 to-white"
       >
         {/* very subtle background */}
         <div
