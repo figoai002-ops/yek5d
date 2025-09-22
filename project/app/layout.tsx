@@ -8,7 +8,6 @@ import { Toaster as SonnerToaster } from 'sonner';
 const systemFont = {
   variable: '--font-system'
 };
-
 export const metadata: Metadata = {
   title: {
     default: 'YEKLAB - Laboratuvar Cihazları ve Ekipmanları',
